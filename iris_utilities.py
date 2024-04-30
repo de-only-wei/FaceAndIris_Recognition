@@ -3,6 +3,7 @@ import os
 from matplotlib import pyplot as plt
 import cv2
 import numpy as np
+import pywt
 from scipy.interpolate import interp1d
 
 # Hough Transform
@@ -49,8 +50,6 @@ def process_hough(imagepath, image, radius):
         return (image, image.shape[0], success)
 
 # Fix Images
-
-
 def remove_reflection(image):  # returns image
     ret, mask = cv2.threshold(
         image, 150, 255, cv2.THRESH_BINARY
@@ -64,8 +63,6 @@ def remove_reflection(image):  # returns image
     return image_rr
 
 # Daugman Rubber Sheet Model
-
-
 def generate_rubber_sheet_model(image):  # returns image
     q = np.arange(0.00, np.pi * 2, 0.01)
     inn = np.arange(0, int(image.shape[0] / 2), 1)
@@ -91,8 +88,6 @@ def generate_rubber_sheet_model(image):  # returns image
 
 # Parse Iris Dataset
 # Returns images(image, radius, success, image_id, label)
-
-
 def parse_iris_dataset(keep_reflections):
     # eye_num_2 = 0
     # final_output = []
@@ -154,33 +149,11 @@ def parse_iris_dataset(keep_reflections):
             else:
                 pass
         print('R iris: ' + str(len(eye_R_images)))
-
-        # old code insert here
     print('iris images: ' + str(len(eye_images)))
 
     return eye_images
 
-    # OLD CODE
-    # for image_path in glob.iglob(path+'/L/*'):
-    #     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    #     image = cv2.resize(image, (400, 300))
-    #     eye_L_images.append([image, image_id, label]) #just left iris
-    #     eye_images.append([image, image_id, label])
-    #     image_id += 1
-    # print('L eye: ' + str(len(eye_L_images)))
-
-    # for image_path in glob.iglob(path+'/R/*'):
-    #     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    #     image = cv2.resize(image, (400, 300))
-    #     eye_R_images.append([image, image_id, label]) #just right iris
-    #     eye_images.append([image, image_id, label])
-    #     image_id += 1
-    # print('R iris: ' + str(len(eye_R_images)))
-
-
 # Proccess to Daugman
-
-
 def proccess_images(eye_images):
     for eye_image in eye_images:
         (image, radius, success, image_id, label) = eye_image
@@ -195,3 +168,30 @@ def proccess_images(eye_images):
             f'Iris_Output/{str(label)}.{str(image_id)}.Iris.bmp',
             image_daugman
         )
+
+def feature_extraction(img):
+    features = []
+    ccoeffs = pywt.dwt2(img[:, :, 0], 'haar')
+    LL, (LH, HL, HH) = ccoeffs
+    for coef in [LL, LH, HL, HH]:
+        features.append(np.mean(coef))
+        features.append(np.std(coef))
+        features.append(np.max(coef))
+        features.append(np.min(coef))
+        features.append(np.median(coef))
+
+    titles = ['Approximation (LL)', 'Horizontal Detail (LH)',
+              'Vertical Detail (HL)', 'Diagonal Detail (HH)']
+    images = [LL, LH, HL, HH]
+    # Plot all DWT coefficients horizontally in a single graph
+    plt.figure(figsize=(12, 4))  # Adjust the figure size as needed
+
+    for i, (title, image) in enumerate(zip(titles, images), 1):
+        plt.subplot(1, 4, i)  # Arrange subplots in a single row
+        plt.imshow(image, cmap='gray')
+        plt.title(title)
+        plt.axis('off')
+
+    plt.show()
+
+    return features
