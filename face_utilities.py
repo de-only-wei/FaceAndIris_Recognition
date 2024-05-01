@@ -307,7 +307,7 @@ def split_data(
     test_size: float = 0.2,
     train_directory: str = 'Face_Output/Face_Output_Split_Train',
     test_directory: str = 'Face_Output/Face_Output_Split_Test',
-) -> tuple:
+) -> tuple[any, any, any, any]:
     # Create directories
     if not os.path.exists(train_directory):
         os.makedirs(train_directory)

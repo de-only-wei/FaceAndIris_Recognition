@@ -539,7 +539,7 @@ def split_data(
     test_size: float = 0.2,
     train_directory: str = 'Iris_Output/Iris_Output_Split_Train',
     test_directory: str = 'Iris_Output/Iris_Output_Split_Test',
-):
+) -> tuple[any, any, any, any]:
     # Clear / Create directories
     if not os.path.exists(train_directory):
         os.makedirs(train_directory)
