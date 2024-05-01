@@ -1,3 +1,4 @@
+import math
 import dlib
 import cv2
 import numpy as np
@@ -11,14 +12,10 @@ from sklearn.model_selection import train_test_split
 # Define the base directory where the face dataset is located
 base_directory = 'Dataset/VISA_Face/VISA_Face'
 
-# Initialize an empty list to store face images and their associated metadata
-face_images = []
 
-
-# PHASE 1 - PARSE FACE DATASET FUNCTION 
-def parse_face_dataset():
-    # Clear the face_images list before processing the dataset
-    face_images.clear()
+def parse_face_dataset() -> list:
+    # hello
+    face_images = []
 
     # Iterate over each directory in the base directory
     for path in glob.iglob(base_directory + '/*'):
@@ -27,17 +24,17 @@ def parse_face_dataset():
 
         # Parse the filename to extract the label
         underscore_index = filename.find("_")
-        filename_parsed = filename[:underscore_index]
+        parsed_filename = filename[:underscore_index]
         match = re.search(r"(.*?)_2017_001", filename)
         if match:
-            filename_parsed = match.group(1)
+            parsed_filename = match.group(1)
         else:
             # Issue a warning if no match is found and skip processing this file
             warnings.warn(f"No match found for filename: {filename}")
             continue
 
         # Assign the label parsed from the filename
-        label = filename_parsed
+        label = parsed_filename
         # Initialize an image ID counter
         image_id = 0
 
@@ -66,7 +63,9 @@ def parse_face_dataset():
     # Return the list of face images and their associated metadata
     return face_images
 
+
 # PHASE 2 - FACE DETECTION FUNCTION
+# Writes detected face images to folder
 def face_detection(face_images, display):
     # Initialize an empty list to store pre-processed images
     pre_processed_images = []
@@ -114,9 +113,12 @@ def face_detection(face_images, display):
             pre_processed_images.append([face, image_id, label])
 
 # PHASE 3 - FACIAL FEATURE EXTRACTION FUNCTION
+
+
 def facial_feature_extraction(input_directory, output_dir):
     # Initialize face detector and shape predictor
     detector = dlib.get_frontal_face_detector()
+    # detector = cv2.get_frontal_face_detector()
     predictor_path = 'Dependencies/shape_predictor_68_face_landmarks.dat'
     predictor = dlib.shape_predictor(predictor_path)
 
@@ -183,7 +185,7 @@ def calculate_eye_distance(shape):
     # Calculate the Euclidean distance between the outer corners of the eyes
     left_eye_outer_corner = (shape.part(36).x, shape.part(36).y)
     right_eye_outer_corner = (shape.part(45).x, shape.part(45).y)
-    eye_distance = math.sqrt((right_eye_outer_corner[0] - left_eye_outer_corner[0])**2 + (
+    eye_distance = math.sqrt((right_eye_outer_corner[0] - left_eye_outer_corner[0]) ** 2 + (
         right_eye_outer_corner[1] - left_eye_outer_corner[1])**2)
     return eye_distance
 
@@ -275,6 +277,8 @@ def extract_facial_landmarks(input_dir, output_dir):
                 cv2.imwrite(output_path, image)
 
 # PHASE 5 - LANDMARKS TO FEATURES CONVERSION VECTOR FUNCTION
+
+
 def landmarks_to_features(landmarks, output_dir):
     # Create output directory if it doesn't exist
     output_dir = os.path.join(output_dir, 'Face_Output_LFCV')
@@ -294,6 +298,8 @@ def landmarks_to_features(landmarks, output_dir):
         np.save(output_path, feature_vector)
 
 # PHASE 6 - SPLIT DATA FUNCTION
+
+
 def split_data(features, labels, train_dir, test_dir):
     # Clear existing directories if they exist
     if os.path.exists(train_dir):
