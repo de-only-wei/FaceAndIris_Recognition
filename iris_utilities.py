@@ -15,7 +15,9 @@ import shutil
 from scipy.interpolate import interp1d
 from sklearn.model_selection import train_test_split
 
-# HOUGH PROCESS FUNCTION 
+# HOUGH PROCESS FUNCTION
+
+
 def process_hough(imagepath, image, radius):
     try:
         print("Processing image:", imagepath)
@@ -75,7 +77,9 @@ def process_hough(imagepath, image, radius):
         print("Error:", e)
         return None, None, False
 
-# REMOVE REFLECTION FUNCTION 
+# REMOVE REFLECTION FUNCTION
+
+
 def remove_reflection(image):
     try:
         # Threshold the image to create a mask of the reflection
@@ -94,7 +98,9 @@ def remove_reflection(image):
         print("Error:", e)
         return None
 
-# RUBBER SHEET MODEL GENERATOR FUNCTION 
+# RUBBER SHEET MODEL GENERATOR FUNCTION
+
+
 def generate_rubber_sheet_model(image):
     try:
         q = np.arange(0.00, np.pi * 2, 0.01)
@@ -118,7 +124,9 @@ def generate_rubber_sheet_model(image):
         print("Error:", e)
         return None
 
-# PARSE IRIS DATASET FUNCTION 
+# PARSE IRIS DATASET FUNCTION
+
+
 def parse_iris_dataset(keep_reflections):
     try:
         eye_images = []
@@ -186,6 +194,8 @@ def parse_iris_dataset(keep_reflections):
         return None
 
 # PROCESS IMAGES FUNCTION
+
+
 def process_images(eye_images):
     try:
         # Create a directory for saving the processed images if it doesn't exist
@@ -218,8 +228,10 @@ def process_images(eye_images):
     except Exception as e:
         print("Error:", e)
 
-# DETECT IRIS FUNCTION 
+# DETECT IRIS FUNCTION
 # OBSOLETE - Detect Iris using Iris Cascade
+
+
 def detect_iris(eye_images, display):
     eye_num_2 = 0
     eyes_num = 0
@@ -287,6 +299,8 @@ def detect_iris(eye_images, display):
     print("total images: ", len(eye_images))
 
 # For Display
+
+
 def processing(image_path, r):
     success = False
     image = cv2.imread(image_path)
@@ -378,6 +392,8 @@ def feature_extraction(img):
     return features
 
 # PARSE IRIS DATASET FUNCTION
+
+
 def parse_iris_dataset():
     eye_images = []
     base_directory = 'Dataset/VISA_Iris/VISA_Iris'
@@ -411,6 +427,8 @@ def parse_iris_dataset():
     return eye_images
 
 # IRIS DETECTION FUNCTION
+
+
 def iris_detection(eye_images, display):
     eye_num_2 = 0
     eyes_num = 0
@@ -438,7 +456,7 @@ def iris_detection(eye_images, display):
         image_unboxed = image.copy()
 
         image_cropped = image_unboxed[point_y:point_y +
-                                       maxium_height, point_x:point_x + maxium_width]
+                                      maxium_height, point_x:point_x + maxium_width]
 
         image_boxed = cv2.rectangle(
             image,
@@ -476,8 +494,8 @@ def iris_detection(eye_images, display):
     print("Total eyes found:", eyes_num)
     print("Total eyes found 2:", eye_num_2)
     print("Total images:", len(eye_images))
-    
-    
+
+
 # Parse iris dataset and load data
 def load_data():
     eye_images = []
@@ -514,29 +532,56 @@ def load_data():
     print('Total iris images:', len(eye_images))
     return eye_images, labels
 
-def split_data(features, labels, test_size=0.2, train_dir='Iris_Output/Iris_Output_Split_Train', test_dir='Iris_Output/Iris_Output_Split_Test'):
+
+def split_data(
+    features,
+    labels,
+    test_size: float = 0.2,
+    train_directory: str = 'Iris_Output/Iris_Output_Split_Train',
+    test_directory: str = 'Iris_Output/Iris_Output_Split_Test',
+):
+    # Clear / Create directories
+    if os.path.exists(train_directory):
+        shutil.rmtree(train_directory)
+    else:
+        os.makedirs(train_directory)
+
+    if os.path.exists(test_directory):
+        shutil.rmtree(test_directory)
+    else:
+        os.makedirs(test_directory)
+
     # Split the data into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=test_size, random_state=42)
+    x_train, x_test, y_train, y_test = train_test_split(
+        features, labels,
+        test_size=test_size,
+        random_state=42,
+    )
 
-    # Create subfolders for train and test sets
-    if not os.path.exists(train_dir):
-        os.makedirs(train_dir)
+    # Save training data
+    np.save(os.path.join(train_directory, 'X_train.npy'), x_train)
+    np.save(os.path.join(train_directory, 'y_train.npy'), y_train)
 
-    if not os.path.exists(test_dir):
-        os.makedirs(test_dir)
+    # Save testing data
+    np.save(os.path.join(test_directory, 'X_test.npy'), x_test)
+    np.save(os.path.join(test_directory, 'y_test.npy'), y_test)
 
-    # Save train data
-    for i, (feature, label) in enumerate(zip(X_train, y_train)):
-        label_dir = os.path.join(train_dir, label)
-        if not os.path.exists(label_dir):
-            os.makedirs(label_dir)
-        cv2.imwrite(os.path.join(label_dir, f'image_{i}.bmp'), feature)
+    # Print the sizes of the training and testing sets
+    print("Training set size:", len(x_train))
+    print("Testing set size:", len(x_test))
 
-    # Save test data
-    for i, (feature, label) in enumerate(zip(X_test, y_test)):
-        label_dir = os.path.join(test_dir, label)
-        if not os.path.exists(label_dir):
-            os.makedirs(label_dir)
-        cv2.imwrite(os.path.join(label_dir, f'image_{i}.bmp'), feature)
+    # # Save train data
+    # for i, (feature, label) in enumerate(zip(x_train, y_train)):
+    #     label_dir = os.path.join(train_directory, label)
+    #     if not os.path.exists(label_dir):
+    #         os.makedirs(label_dir)
+    #     cv2.imwrite(os.path.join(label_dir, f'image_{i}.bmp'), feature)
 
-    return X_train, X_test, y_train, y_test
+    # # Save test data
+    # for i, (feature, label) in enumerate(zip(x_test, y_test)):
+    #     label_dir = os.path.join(test_directory, label)
+    #     if not os.path.exists(label_dir):
+    #         os.makedirs(label_dir)
+    #     cv2.imwrite(os.path.join(label_dir, f'image_{i}.bmp'), feature)
+
+    return x_train, x_test, y_train, y_test

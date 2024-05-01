@@ -8,13 +8,14 @@ import glob
 import warnings
 import shutil
 from sklearn.model_selection import train_test_split
+import pickle
 
 # Define the base directory where the face dataset is located
 base_directory = 'Dataset/VISA_Face/VISA_Face'
 
 
 def parse_face_dataset() -> list:
-    # hello
+    """return: list<image, image_id, label>"""
     face_images = []
 
     # Iterate over each directory in the base directory
@@ -64,9 +65,9 @@ def parse_face_dataset() -> list:
     return face_images
 
 
-# PHASE 2 - FACE DETECTION FUNCTION
-# Writes detected face images to folder
-def face_detection(face_images, display):
+def face_detection(face_images: list, display) -> None:
+    """Writes detected face images to folder"""
+
     # Initialize an empty list to store pre-processed images
     pre_processed_images = []
 
@@ -300,39 +301,51 @@ def landmarks_to_features(landmarks, output_dir):
 # PHASE 6 - SPLIT DATA FUNCTION
 
 
-def split_data(features, labels, train_dir, test_dir):
-    # Clear existing directories if they exist
-    if os.path.exists(train_dir):
-        shutil.rmtree(train_dir)
-    if os.path.exists(test_dir):
-        shutil.rmtree(test_dir)
+def split_data(
+    features,
+    labels,
+    test_size: float = 0.2,
+    train_directory: str = 'Face_Output/Face_Output_Split_Train',
+    test_directory: str = 'Face_Output/Face_Output_Split_Test',
+):
+    # Clear / Create directories
+    if os.path.exists(train_directory):
+        shutil.rmtree(train_directory)
+    else:
+        os.makedirs(train_directory)
 
-    # Create directories
-    os.makedirs(train_dir)
-    os.makedirs(test_dir)
+    if os.path.exists(test_directory):
+        shutil.rmtree(test_directory)
+    else:
+        os.makedirs(test_directory)
 
     # Split the data into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(
-        features, labels, test_size=0.2, random_state=42)
+    x_train, x_test, y_train, y_test = train_test_split(
+        features, labels,
+        test_size=test_size,
+        random_state=42,
+    )
 
     # Save training data
-    np.save(os.path.join(train_dir, 'X_train.npy'), X_train)
-    np.save(os.path.join(train_dir, 'y_train.npy'), y_train)
+    np.save(os.path.join(train_directory, 'X_train.npy'), x_train)
+    np.save(os.path.join(train_directory, 'y_train.npy'), y_train)
 
     # Save testing data
-    np.save(os.path.join(test_dir, 'X_test.npy'), X_test)
-    np.save(os.path.join(test_dir, 'y_test.npy'), y_test)
+    np.save(os.path.join(test_directory, 'X_test.npy'), x_test)
+    np.save(os.path.join(test_directory, 'y_test.npy'), y_test)
 
     # Print the sizes of the training and testing sets
-    print("Training set size:", len(X_train))
-    print("Testing set size:", len(X_test))
+    print("Training set size:", len(x_train))
+    print("Testing set size:", len(x_test))
 
     # View saved data
     print("\nTraining Data:")
-    view_saved_data(train_dir)
+    view_saved_data(train_directory)
 
     print("\nTesting Data:")
-    view_saved_data(test_dir)
+    view_saved_data(test_directory)
+
+    return x_train, x_test, y_train, y_test
 
 
 # Define the function to view saved data
