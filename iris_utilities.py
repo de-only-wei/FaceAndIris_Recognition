@@ -220,6 +220,33 @@ def process_images(eye_images):
     except Exception as e:
         print("Error:", e)
 
+def feature_extraction(img):
+    features = []
+    ccoeffs = pywt.dwt2(img[:, :, 0], 'haar')
+    LL, (LH, HL, HH) = ccoeffs
+    for coef in [LL, LH, HL, HH]:
+        features.append(np.mean(coef))
+        features.append(np.std(coef))
+        features.append(np.max(coef))
+        features.append(np.min(coef))
+        features.append(np.median(coef))
+
+    titles = ['Approximation (LL)', 'Horizontal Detail (LH)',
+              'Vertical Detail (HL)', 'Diagonal Detail (HH)']
+    images = [LL, LH, HL, HH]
+    # Plot all DWT coefficients horizontally in a single graph
+    plt.figure(figsize=(12, 4))  # Adjust the figure size as needed
+
+    for i, (title, image) in enumerate(zip(titles, images), 1):
+        plt.subplot(1, 4, i)  # Arrange subplots in a single row
+        plt.imshow(image, cmap='gray')
+        plt.title(title)
+        plt.axis('off')
+
+    plt.show()
+
+    return features
+
 # DETECT IRIS FUNCTION
 # OBSOLETE - Detect Iris using Iris Cascade
 def detect_iris(eye_images, display):
