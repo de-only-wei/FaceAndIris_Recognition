@@ -171,8 +171,13 @@ def facial_feature_extraction(input_directory, output_dir) -> tuple[list, list]:
                 features.append(feature_vector)
 
                 # TODO:
-                match = re.search(r"(.*?)_2017_001", filename)
-                labels.append(filename)
+                label = re.sub(
+                    r'(.+?)_\d+_Cropped.jpg',
+                    lambda match: match.group(1),
+                    filename,
+                )
+                # match = re.search(r"(.*?)_2017_001", filename)
+                labels.append(label)
 
                 # Draw lines between facial landmarks on the image
                 draw_lines(image, shape)
@@ -310,7 +315,7 @@ def split_data(
     test_size: float = 0.2,
     train_directory: str = 'Face_Output/Face_Output_Split_Train',
     test_directory: str = 'Face_Output/Face_Output_Split_Test',
-) -> tuple[any, any, any, any]:
+) -> tuple[typing.Any, typing.Any, typing.Any, typing.Any]:
     # Create directories
     os.makedirs(train_directory, exist_ok=True)
     os.makedirs(test_directory, exist_ok=True)

@@ -21,15 +21,6 @@ def train(
     knn_algo: str = 'ball_tree',
     verbose: bool = False,
 ):
-    # x = []
-    # y = []
-
-    # # Loop through each training sample
-    # for features, label in zip(x_train, y_train):
-    #     # Append features and corresponding label to X and y
-    #     x.append(features)
-    #     y.append(label)
-
     # Determine how many neighbors to use for weighting in the KNN classifier
     if n_neighbors is None:
         n_neighbors = int(round(math.sqrt(len(x_train))))
