@@ -18,7 +18,7 @@ from sklearn.model_selection import train_test_split
 # HOUGH PROCESS FUNCTION
 
 
-def process_hough(imagepath, image, radius):
+def process_hough(imagepath, image, radius) -> tuple[np.ndarray, int, bool]:
     try:
         print("Processing image:", imagepath)
 
@@ -78,9 +78,7 @@ def process_hough(imagepath, image, radius):
         return None, None, False
 
 # REMOVE REFLECTION FUNCTION
-
-
-def remove_reflection(image):
+def remove_reflection(image) -> np.ndarray|None:
     try:
         # Threshold the image to create a mask of the reflection
         ret, mask = cv2.threshold(image, 150, 255, cv2.THRESH_BINARY)
@@ -99,9 +97,7 @@ def remove_reflection(image):
         return None
 
 # RUBBER SHEET MODEL GENERATOR FUNCTION
-
-
-def generate_rubber_sheet_model(image):
+def generate_rubber_sheet_model(image) -> np.ndarray| None:
     try:
         q = np.arange(0.00, np.pi * 2, 0.01)
         inn = np.arange(0, int(image.shape[0] / 2), 1)
@@ -125,9 +121,7 @@ def generate_rubber_sheet_model(image):
         return None
 
 # PARSE IRIS DATASET FUNCTION
-
-
-def parse_iris_dataset(keep_reflections):
+def parse_iris_dataset(keep_reflections) -> list | None:
     try:
         eye_images = []
         base_directory = 'Dataset/VISA_Iris/VISA_Iris'
@@ -194,8 +188,6 @@ def parse_iris_dataset(keep_reflections):
         return None
 
 # PROCESS IMAGES FUNCTION
-
-
 def process_images(eye_images):
     try:
         # Create a directory for saving the processed images if it doesn't exist
@@ -230,8 +222,6 @@ def process_images(eye_images):
 
 # DETECT IRIS FUNCTION
 # OBSOLETE - Detect Iris using Iris Cascade
-
-
 def detect_iris(eye_images, display):
     eye_num_2 = 0
     eyes_num = 0
@@ -298,204 +288,6 @@ def detect_iris(eye_images, display):
     print("total_eyes_found 2 = ", eye_num_2)
     print("total images: ", len(eye_images))
 
-# For Display
-
-
-def processing(image_path, r):
-    success = False
-    image = cv2.imread(image_path)
-    image = cv2.resize(image, (640, 480), interpolation=cv2.INTER_LINEAR)
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    gray = cv2.medianBlur(gray, 11)
-    ret, _ = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    circles = cv2.HoughCircles(
-        gray,
-        cv2.HOUGH_GRADIENT,
-        1,
-        50,
-        param1=ret,
-        param2=30,
-        minRadius=20,
-        maxRadius=100,
-    )
-    try:
-        circles = circles[0, :, :]
-        circles = np.int16(np.array(circles))
-        for i in circles[:]:
-            image = image[
-                i[1] - i[2] - r: i[1] + i[2] + r, i[0] - i[2] - r: i[0] + i[2] + r
-            ]
-            radius = i[2]
-        success = True
-        return image, radius, success
-    except:
-        image[:] = 255
-        print(f"{image_path} -> No circles (iris) found.")
-        success = False
-        return image, image.shape[0], success
-
-
-def generate_rubber_sheet_model(img):
-    q = np.arange(0.00, np.pi * 2, 0.01)
-    inn = np.arange(0, int(img.shape[0] / 2), 1)
-
-    cartisian_image = np.empty(shape=[inn.size, int(img.shape[1]), 3])
-    m = interp1d([np.pi * 2, 0], [0, img.shape[1]])
-
-    for r in inn:
-        for t in q:
-            polarX = int((r * np.cos(t)) + img.shape[1] / 2)
-            polarY = int((r * np.sin(t)) + img.shape[0] / 2)
-            try:
-                cartisian_image[int(r)][int(m(t))] = img[polarY][polarX]
-            except:
-                pass
-
-    return cartisian_image.astype("uint8")
-
-
-def remove_reflection(img):
-    ret, mask = cv2.threshold(img, 150, 255, cv2.THRESH_BINARY)
-    # Convert mask to 8-bit, 1-channel image
-    mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
-    kernel = np.ones((5, 5), np.uint8)
-    dilation = cv2.dilate(mask, kernel, iterations=1)
-    dst = cv2.inpaint(img, dilation, 5, cv2.INPAINT_TELEA)
-    return dst
-
-
-def feature_extraction(img):
-    features = []
-    ccoeffs = pywt.dwt2(img[:, :, 0], 'haar')
-    LL, (LH, HL, HH) = ccoeffs
-    for coef in [LL, LH, HL, HH]:
-        features.append(np.mean(coef))
-        features.append(np.std(coef))
-        features.append(np.max(coef))
-        features.append(np.min(coef))
-        features.append(np.median(coef))
-
-    titles = ['Approximation (LL)', 'Horizontal Detail (LH)',
-              'Vertical Detail (HL)', 'Diagonal Detail (HH)']
-    images = [LL, LH, HL, HH]
-    # Plot all DWT coefficients horizontally in a single graph
-    plt.figure(figsize=(12, 4))  # Adjust the figure size as needed
-
-    for i, (title, image) in enumerate(zip(titles, images), 1):
-        plt.subplot(1, 4, i)  # Arrange subplots in a single row
-        plt.imshow(image, cmap='gray')
-        plt.title(title)
-        plt.axis('off')
-
-    plt.show()
-
-    return features
-
-# PARSE IRIS DATASET FUNCTION
-
-
-def parse_iris_dataset():
-    eye_images = []
-    base_directory = 'Dataset/VISA_Iris/VISA_Iris'
-
-    for path in glob.iglob(base_directory + '/*'):
-        foldername = os.path.basename(path)
-        label = foldername
-        print('Label:', label)
-        image_id = 0
-
-        # Process Left Eye
-        for image_path in glob.iglob(path + '/L/*'):
-            image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-            image = cv2.resize(image, (400, 300))
-            eye_images.append([image, image_id, label])  # Left iris
-            image_id += 1
-
-        print('Left eye count:', image_id)
-
-        # Process Right Eye
-        for image_path in glob.iglob(path + '/R/*'):
-            image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-            image = cv2.resize(image, (400, 300))
-            eye_images.append(
-                [image, image_id, label + '-right'])  # Right iris
-            image_id += 1
-
-        print('Right eye count:', image_id)
-
-    print('Total iris images:', len(eye_images))
-    return eye_images
-
-# IRIS DETECTION FUNCTION
-
-
-def iris_detection(eye_images, display):
-    eye_num_2 = 0
-    eyes_num = 0
-
-    # Load the Haar cascade classifier for eye detection
-    eye_cascade = cv2.CascadeClassifier('Dependencies/haarcascade_eye.xml')
-
-    for eye_image in eye_images:
-        (image, image_id, label) = eye_image
-        eyes = eye_cascade.detectMultiScale(image, 1.1, 2)
-
-        if len(eyes) > 1:
-            eyes_num = eyes_num + 1
-            maxium_area = -3
-
-        for (x, y, width, height) in eyes:
-            area = width * height
-            if area > maxium_area:
-                maxium_area = area
-                maxium_width = width
-                point_x = x
-                point_y = y
-                maxium_height = height
-
-        image_unboxed = image.copy()
-
-        image_cropped = image_unboxed[point_y:point_y +
-                                      maxium_height, point_x:point_x + maxium_width]
-
-        image_boxed = cv2.rectangle(
-            image,
-            (point_x, point_y),
-            (point_x + maxium_width, point_y + maxium_height),
-            (255, 0, 0),
-            2,
-        )
-
-        cv2.imwrite(
-            'Processed/'+str(label) + '.' + str(image_id) + '.Iris' + '.bmp',
-            image_cropped
-        )
-
-    print("Iris image preprocessing done")
-
-    if (display):
-        fig, axes = plot.subplots(1, 3, figsize=(12, 5))
-
-        axes[0].imshow(image_unboxed)
-        axes[0].set_title('Original Image')
-        axes[0].axis('off')  # Hide axes for cleaner presentation
-
-        axes[1].imshow(image_boxed)
-        axes[1].set_title('Iris Detection')
-        axes[1].axis('off')
-
-        axes[2].imshow(image_cropped)
-        axes[2].set_title('Cropped Image')
-        axes[2].axis('off')
-
-        plot.tight_layout()
-        plot.show()
-
-    print("Total eyes found:", eyes_num)
-    print("Total eyes found 2:", eye_num_2)
-    print("Total images:", len(eye_images))
-
-
 # Parse iris dataset and load data
 def load_data():
     eye_images = []
@@ -531,7 +323,6 @@ def load_data():
 
     print('Total iris images:', len(eye_images))
     return eye_images, labels
-
 
 def split_data(
     features,
