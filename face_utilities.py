@@ -307,16 +307,12 @@ def split_data(
     test_size: float = 0.2,
     train_directory: str = 'Face_Output/Face_Output_Split_Train',
     test_directory: str = 'Face_Output/Face_Output_Split_Test',
-):
-    # Clear / Create directories
-    if os.path.exists(train_directory):
-        shutil.rmtree(train_directory)
-    else:
+) -> tuple:
+    # Create directories
+    if not os.path.exists(train_directory):
         os.makedirs(train_directory)
 
-    if os.path.exists(test_directory):
-        shutil.rmtree(test_directory)
-    else:
+    if not os.path.exists(test_directory):
         os.makedirs(test_directory)
 
     # Split the data into training and testing sets
