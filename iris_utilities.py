@@ -285,7 +285,6 @@ def detect_iris(eye_images, display):
     print("total images: ", len(eye_images))
 
 # For Display
-
 def processing(image_path, r):
     success = False
     image = cv2.imread(image_path)
@@ -375,97 +374,6 @@ def feature_extraction(img):
     plt.show()
 
     return features
-
-
-imagepath = "Dataset/VISA_Iris/VISA_Iris/S0001_F_30/R/1.bmp"
-
-# hough
-image1, radius, success = processing(imagepath, 60)
-
-# remove reflection
-imageN = remove_reflection(image1)
-
-# daugman
-sheet = generate_rubber_sheet_model(image1)
-sheetN = generate_rubber_sheet_model(imageN)
-
-# dwt reflection
-dwt_feature = feature_extraction(sheet)
-
-# dwt no reflection
-dwt_featureN = feature_extraction(sheetN)
-
-print("DWT Features:", dwt_feature)
-print("DWT Features N:", dwt_featureN)
-
-fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-axes[0].imshow(imageN)
-axes[0].set_title('Iris Image')
-axes[0].axis('off')  # Hide axes for cleaner presentation
-
-axes[1].imshow(sheetN)
-axes[1].set_title('Daugman Rubber Sheet')
-axes[1].axis('off')
-
-plt.tight_layout()
-plt.show()
-
-#TEST
-
-imagepath = "Dataset/VISA_Iris/VISA_Iris/S0001_F_30/L/2.bmp"
-
-eye_image = cv2.imread(imagepath, cv2.IMREAD_GRAYSCALE)
-
-eye_circles = cv2.HoughCircles(
-    eye_image, cv2.HOUGH_GRADIENT, 2, 100,  minRadius=90, maxRadius=200)
-
-iris_coordinates = None
-
-if eye_circles is not None:
-    circle = eye_circles[0][0]
-    iris_coordinates = (circle[0], circle[1])
-
-if iris_coordinates is not None:
-    x = int(iris_coordinates[0])
-    y = int(iris_coordinates[1])
-
-    w = int(round(circle[2]) + 10)
-    h = int(round(circle[2]) + 10)
-
-    image_hough_processed = eye_image[y-h:y+h, x-w:x+w]
-    iris_image_to_show = cv2.resize(
-        image_hough_processed, (image_hough_processed.shape[1]*2, image_hough_processed.shape[0]*2))
-
-q = np.arange(0.00, np.pi*2, 0.01)  # theta
-inn = np.arange(0, int(iris_image_to_show.shape[0]/2), 1)  # radius
-
-cartisian_image = np.empty(
-    shape=[inn.size, int(iris_image_to_show.shape[1]), 3])
-m = interp1d([np.pi*2, 0], [0, iris_image_to_show.shape[1]])
-
-for r in inn:
-    for t in q:
-        polarX = int((r * np.cos(t)) + iris_image_to_show.shape[1]/2)
-        polarY = int((r * np.sin(t)) + iris_image_to_show.shape[0]/2)
-        cartisian_image[r][int(m(t) - 1)] = iris_image_to_show[polarY][polarX]
-
-cartisian_image = cartisian_image.astype('uint8')
-
-fig, axes = plt.subplots(1, 3, figsize=(12, 5))
-axes[0].imshow(eye_image, cmap='gray')
-axes[0].set_title('Original Image')
-axes[0].axis('off')
-
-axes[1].imshow(iris_image_to_show, cmap='gray')
-axes[1].set_title('Haar Iris Cascade Classifier Detection')
-axes[1].axis('off')
-
-axes[2].imshow(cartisian_image, cmap='gray')
-axes[2].set_title('Cropped Eye')
-axes[2].axis('off')
-
-plt.tight_layout()
-plt.show()
 
 # PARSE IRIS DATASET FUNCTION
 def parse_iris_dataset():
@@ -566,7 +474,3 @@ def iris_detection(eye_images, display):
     print("Total eyes found:", eyes_num)
     print("Total eyes found 2:", eye_num_2)
     print("Total images:", len(eye_images))
-
-# TEST
-eye_images = parse_iris_dataset()
-iris_detection(eye_images, display=True)
