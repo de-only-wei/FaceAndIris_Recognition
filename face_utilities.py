@@ -14,7 +14,7 @@ import pickle
 base_directory = 'Dataset/VISA_Face/VISA_Face'
 
 
-def parse_face_dataset() -> list:
+def parse_face_dataset() -> list[cv2.MatLike, int, str | any]:
     """return: list<image, image_id, label>"""
     face_images = []
 
@@ -116,7 +116,7 @@ def face_detection(face_images: list, display) -> None:
 # PHASE 3 - FACIAL FEATURE EXTRACTION FUNCTION
 
 
-def facial_feature_extraction(input_directory, output_dir):
+def facial_feature_extraction(input_directory, output_dir) -> tuple[list, list]:
     # Initialize face detector and shape predictor
     detector = dlib.get_frontal_face_detector()
     # detector = cv2.get_frontal_face_detector()
@@ -182,7 +182,7 @@ def facial_feature_extraction(input_directory, output_dir):
     return features, labels
 
 
-def calculate_eye_distance(shape):
+def calculate_eye_distance(shape) -> float:
     # Calculate the Euclidean distance between the outer corners of the eyes
     left_eye_outer_corner = (shape.part(36).x, shape.part(36).y)
     right_eye_outer_corner = (shape.part(45).x, shape.part(45).y)
@@ -191,7 +191,7 @@ def calculate_eye_distance(shape):
     return eye_distance
 
 
-def calculate_nose_shape(shape):
+def calculate_nose_shape(shape) -> list:
     nose_shape = []
     # Calculate the width of the nose
     nose_width = shape.part(35).x - shape.part(31).x
@@ -201,7 +201,7 @@ def calculate_nose_shape(shape):
     return nose_shape
 
 
-def calculate_lips_contour(shape):
+def calculate_lips_contour(shape) -> list:
     lips_contour = []
     # Calculate the width of the lips
     lips_width = shape.part(54).x - shape.part(48).x
@@ -211,7 +211,7 @@ def calculate_lips_contour(shape):
     return lips_contour
 
 
-def calculate_mouth_wrinkles(shape):
+def calculate_mouth_wrinkles(shape) -> list:
     mouth_wrinkles = []
     # Calculate the difference in y-coordinates between upper and lower lip
     upper_lip_y = shape.part(51).y
@@ -223,7 +223,7 @@ def calculate_mouth_wrinkles(shape):
     return mouth_wrinkles
 
 
-def draw_lines(image, shape):
+def draw_lines(image, shape) -> None:
     # Draw lines between specific facial landmarks
     lines = [(30, 33), (48, 54), (48, 57), (36, 45)]  # Nose, lips, eyes
     for start, end in lines:
@@ -233,7 +233,7 @@ def draw_lines(image, shape):
 
 
 # PHASE 4 - EXTRACT FACIAL LANDMARKS FUNCTION
-def extract_facial_landmarks(input_dir, output_dir):
+def extract_facial_landmarks(input_dir, output_dir) -> None:
     # Initialize face detector and shape predictor
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor(
@@ -280,13 +280,13 @@ def extract_facial_landmarks(input_dir, output_dir):
 # PHASE 5 - LANDMARKS TO FEATURES CONVERSION VECTOR FUNCTION
 
 
-def landmarks_to_features(landmarks, output_dir):
+def landmarks_to_features(landmarks, output_dir) -> None:
     # Create output directory if it doesn't exist
     output_dir = os.path.join(output_dir, 'Face_Output_LFCV')
 
     # Clear output directory if it already exists
-    if os.path.exists(output_dir):
-        shutil.rmtree(output_dir)  # Remove the directory and its contents
+    # if os.path.exists(output_dir):
+    #     shutil.rmtree(output_dir)  # Remove the directory and its contents
     os.makedirs(output_dir, exist_ok=True)
 
     # Iterate over each set of landmarks
