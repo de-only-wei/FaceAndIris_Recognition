@@ -9,13 +9,13 @@ import warnings
 import shutil
 from sklearn.model_selection import train_test_split
 import pickle
+import typing
 
 # Define the base directory where the face dataset is located
 base_directory = 'Dataset/VISA_Face/VISA_Face'
 
 
-def parse_face_dataset() -> list[cv2.MatLike, int, str | any]:
-    """return: list<image, image_id, label>"""
+def parse_face_dataset() -> list[tuple[cv2.typing.MatLike, int, str | typing.Any]]:
     face_images = []
 
     # Iterate over each directory in the base directory
@@ -51,7 +51,7 @@ def parse_face_dataset() -> list[cv2.MatLike, int, str | any]:
                 # Resize the image to reduce memory usage
                 image = cv2.resize(image, (400, 300))
                 # Append the image, image ID, and label to the face_images list
-                face_images.append([image, image_id, label])
+                face_images.append((image, image_id, label))
                 # Increment the image ID
                 image_id += 1
             except Exception as e:
@@ -169,6 +169,9 @@ def facial_feature_extraction(input_directory, output_dir) -> tuple[list, list]:
 
                 # Add feature vector and filename as label
                 features.append(feature_vector)
+
+                # TODO:
+                match = re.search(r"(.*?)_2017_001", filename)
                 labels.append(filename)
 
                 # Draw lines between facial landmarks on the image
@@ -309,11 +312,8 @@ def split_data(
     test_directory: str = 'Face_Output/Face_Output_Split_Test',
 ) -> tuple[any, any, any, any]:
     # Create directories
-    if not os.path.exists(train_directory):
-        os.makedirs(train_directory)
-
-    if not os.path.exists(test_directory):
-        os.makedirs(test_directory)
+    os.makedirs(train_directory, exist_ok=True)
+    os.makedirs(test_directory, exist_ok=True)
 
     # Split the data into training and testing sets
     x_train, x_test, y_train, y_test = train_test_split(
