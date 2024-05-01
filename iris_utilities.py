@@ -199,7 +199,7 @@ def parse_iris_dataset(keep_reflections):
 def process_images(eye_images):
     try:
         # Create a directory for saving the processed images if it doesn't exist
-        output_dir = "Iris_Output_Demo"
+        output_dir = "Iris_Output"
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
@@ -236,7 +236,7 @@ def detect_iris(eye_images, display):
     eye_num_2 = 0
     eyes_num = 0
     # explain how this works in presentation
-    eye_cascade = cv2.CascadeClassifier('haarcascade_iris.xml')
+    eye_cascade = cv2.CascadeClassifier('Dependencies/haarcascade_iris.xml')
     for eye_image in eye_images:
         (image, image_id, label) = eye_image
         image_id += 1
@@ -394,6 +394,8 @@ def feature_extraction(img):
 # PARSE IRIS DATASET FUNCTION
 
 
+# PARSE IRIS DATASET FUNCTION
+
 def parse_iris_dataset():
     eye_images = []
     base_directory = 'Dataset/VISA_Iris/VISA_Iris'
@@ -408,8 +410,12 @@ def parse_iris_dataset():
         for image_path in glob.iglob(path + '/L/*'):
             image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
             image = cv2.resize(image, (400, 300))
-            eye_images.append([image, image_id, label])  # Left iris
-            image_id += 1
+            image_processed, radius, success = processing(image_path, 50)
+            if success:
+                eye_images.append([image_processed, image_id, label])  # Left iris
+                image_id += 1
+            else:
+                print(f"Error processing image: {image_path}")
 
         print('Left eye count:', image_id)
 
@@ -417,14 +423,18 @@ def parse_iris_dataset():
         for image_path in glob.iglob(path + '/R/*'):
             image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
             image = cv2.resize(image, (400, 300))
-            eye_images.append(
-                [image, image_id, label + '-right'])  # Right iris
-            image_id += 1
+            image_processed, radius, success = processing(image_path, 50)
+            if success:
+                eye_images.append([image_processed, image_id, label + '-right'])  # Right iris
+                image_id += 1
+            else:
+                print(f"Error processing image: {image_path}")
 
         print('Right eye count:', image_id)
 
     print('Total iris images:', len(eye_images))
     return eye_images
+
 
 # IRIS DETECTION FUNCTION
 
