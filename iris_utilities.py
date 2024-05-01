@@ -11,7 +11,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import glob
 import pickle
+import shutil
 from scipy.interpolate import interp1d
+from sklearn.model_selection import train_test_split
 
 # HOUGH PROCESS FUNCTION 
 def process_hough(imagepath, image, radius):
@@ -474,3 +476,67 @@ def iris_detection(eye_images, display):
     print("Total eyes found:", eyes_num)
     print("Total eyes found 2:", eye_num_2)
     print("Total images:", len(eye_images))
+    
+    
+# Parse iris dataset and load data
+def load_data():
+    eye_images = []
+    labels = []
+
+    base_directory = 'Dataset/VISA_Iris/VISA_Iris'
+
+    for path in glob.iglob(base_directory + '/*'):
+        foldername = os.path.basename(path)
+        label = foldername
+        print('Label:', label)
+        image_id = 0
+
+        # Process Left Eye
+        for image_path in glob.iglob(path + '/L/*'):
+            image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+            image = cv2.resize(image, (400, 300))
+            eye_images.append(image)  # Add image to features
+            labels.append(label)  # Add label to labels
+            image_id += 1
+
+        print('Left eye count:', image_id)
+
+        # Process Right Eye
+        for image_path in glob.iglob(path + '/R/*'):
+            image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+            image = cv2.resize(image, (400, 300))
+            eye_images.append(image)  # Add image to features
+            labels.append(label + '-right')  # Add label to labels
+            image_id += 1
+
+        print('Right eye count:', image_id)
+
+    print('Total iris images:', len(eye_images))
+    return eye_images, labels
+
+def split_data(features, labels, test_size=0.2, train_dir='Iris_Output/Iris_Output_Split_Train', test_dir='Iris_Output/Iris_Output_Split_Test'):
+    # Split the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=test_size, random_state=42)
+
+    # Create subfolders for train and test sets
+    if not os.path.exists(train_dir):
+        os.makedirs(train_dir)
+
+    if not os.path.exists(test_dir):
+        os.makedirs(test_dir)
+
+    # Save train data
+    for i, (feature, label) in enumerate(zip(X_train, y_train)):
+        label_dir = os.path.join(train_dir, label)
+        if not os.path.exists(label_dir):
+            os.makedirs(label_dir)
+        cv2.imwrite(os.path.join(label_dir, f'image_{i}.bmp'), feature)
+
+    # Save test data
+    for i, (feature, label) in enumerate(zip(X_test, y_test)):
+        label_dir = os.path.join(test_dir, label)
+        if not os.path.exists(label_dir):
+            os.makedirs(label_dir)
+        cv2.imwrite(os.path.join(label_dir, f'image_{i}.bmp'), feature)
+
+    return X_train, X_test, y_train, y_test
