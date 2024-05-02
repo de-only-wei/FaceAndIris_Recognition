@@ -34,7 +34,7 @@ def parse_iris_dataset(keep_reflections: bool = False) -> tuple[list, list, list
             image = cv2.imread(image_path)
 
             image_hough_processed = process_hough(image_path, image, 50)
-
+            
             if not keep_reflections:
                 image_hough_processed = remove_reflection(
                     image_hough_processed)

@@ -53,3 +53,4 @@ def predict(x_test, y_test, knn_clf=None, model: neighbors.KNeighborsClassifier 
     # print("Accuracy:", accuracy)
 
     return predictions, accuracy
+
