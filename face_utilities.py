@@ -15,8 +15,9 @@ import typing
 base_directory = 'Dataset/VISA_Face/VISA_Face'
 
 
-def parse_face_dataset() -> list[tuple[cv2.typing.MatLike, int, str | typing.Any]]:
-    face_images = []
+def parse_face_dataset() -> tuple[list[cv2.typing.MatLike], list[str]]:
+    images: list[cv2.typing.MatLike] = []
+    labels: list[str] = []
 
     # Iterate over each directory in the base directory
     for path in glob.iglob(base_directory + '/*'):
@@ -24,99 +25,56 @@ def parse_face_dataset() -> list[tuple[cv2.typing.MatLike, int, str | typing.Any
         filename = os.path.basename(path)
 
         # Parse the filename to extract the label
-        underscore_index = filename.find("_")
-        parsed_filename = filename[:underscore_index]
-        match = re.search(r"(.*?)_2017_001", filename)
+        match = re.search(r'(.*?)_2017_001', filename)
         if match:
-            parsed_filename = match.group(1)
+            label = match.group(1)
         else:
-            # Issue a warning if no match is found and skip processing this file
             warnings.warn(f"No match found for filename: {filename}")
             continue
 
-        # Assign the label parsed from the filename
-        label = parsed_filename
-        # Initialize an image ID counter
-        image_id = 0
-
-        # Iterate over each image file in the current directory
         for image_path in glob.iglob(path + '/*'):
             try:
                 # Read the image as grayscale
                 image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
                 if image is None:
-                    # Issue a warning if the image fails to load and continue to the next image
                     warnings.warn(f"Failed to load image: {image_path}")
                     continue
-                # Resize the image to reduce memory usage
+
+                # Reduce memory usage
                 image = cv2.resize(image, (400, 300))
-                # Append the image, image ID, and label to the face_images list
-                face_images.append((image, image_id, label))
-                # Increment the image ID
-                image_id += 1
+
+                images.append(image)
+                labels.append(label)
+
             except Exception as e:
-                # Issue a warning if there's an error processing the image and continue to the next image
                 warnings.warn(f"Error processing image: {image_path}\n{e}")
 
-    # Print the total number of face images found
-    print('Total Face Images Found: ' + str(len(face_images)))
+    print('Total Face Images Found:', len(images))
 
-    # Return the list of face images and their associated metadata
-    return face_images
+    return images, labels
 
 
-def face_detection(face_images: list, display) -> None:
-    """Writes detected face images to folder"""
-
-    # Initialize an empty list to store pre-processed images
-    pre_processed_images = []
+def detect_faces(images: list[cv2.typing.MatLike], display: bool = False) -> list[cv2.typing.MatLike]:
 
     # Load the pre-trained face cascade classifier
     face_cascade = cv2.CascadeClassifier(
-        'Dependencies/haarcascade_frontalface_alt2.xml')
+        'Dependencies/haarcascade_frontalface_alt2.xml',
+    )
 
-    # Output directory for storing the detected faces
-    output_dir = os.path.join('Face_Output', 'Face_Output_Detection')
+    pre_processed_images: list[cv2.typing.MatLike] = []
+    for image in images:
 
-    # Clear output directory if it already exists
-    if os.path.exists(output_dir):
-        for filename in os.listdir(output_dir):
-            file_path = os.path.join(output_dir, filename)
-            try:
-                if os.path.isfile(file_path):
-                    os.unlink(file_path)
-            except Exception as e:
-                print(f"Failed to delete {file_path}: {e}")
-
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Iterate over each face image in the input list
-    for face_image in face_images:
-        # Unpack the face image tuple into image, image_id, and label
-        (image, image_id, label) = face_image
-        image_id += 1  # Increment image ID
-
-        # Detect faces in the image using the cascade classifier
-        faces = face_cascade.detectMultiScale(image, 1.1, 4)
-
-        # Iterate over each detected face
-        for (x, y, width, height) in faces:
-            # Crop the detected face from the original image
+        for x, y, width, height in face_cascade.detectMultiScale(image, 1.1, 4):
             face = image[y:y + height, x:x + width]
+            pre_processed_images.append(face)
 
-            # Save the cropped face image to the output directory
-            output_path = os.path.join(
-                output_dir, f'{label}_{image_id}_Cropped.jpg')
-            cv2.imwrite(output_path, face)
-
-            # Append the cropped face image, image ID, and label to the pre_processed_images list
-            pre_processed_images.append([face, image_id, label])
+    return pre_processed_images
 
 # PHASE 3 - FACIAL FEATURE EXTRACTION FUNCTION
 
 
-def facial_feature_extraction(input_directory, output_dir) -> tuple[list, list]:
+def extract_features(images: list[cv2.typing.MatLike]) -> list[list]:
     # Initialize face detector and shape predictor
     detector = dlib.get_frontal_face_detector()
     # detector = cv2.get_frontal_face_detector()
@@ -124,70 +82,50 @@ def facial_feature_extraction(input_directory, output_dir) -> tuple[list, list]:
     predictor = dlib.shape_predictor(predictor_path)
 
     # Create output directory if it doesn't exist
-    output_dir = os.path.join(output_dir, 'Face_Output_Feature_Extraction')
+    # output_dir = os.path.join(output_dir, 'Face_Output_Feature_Extraction')
 
-    # Clear output directory if it already exists
-    if os.path.exists(output_dir):
-        shutil.rmtree(output_dir)  # Remove the directory and its contents
+    # # Clear output directory if it already exists
+    # if os.path.exists(output_dir):
+    #     shutil.rmtree(output_dir)  # Remove the directory and its contents
 
-    os.makedirs(output_dir, exist_ok=True)
+    # os.makedirs(output_dir, exist_ok=True)
 
     # Initialize lists to store features and labels
     features = []
-    labels = []
 
     # Iterate over images in the input directory
-    for filename in os.listdir(input_directory):
-        # Check if the file is an image (JPEG or PNG)
-        if filename.endswith('.jpg') or filename.endswith('.jpeg') or filename.endswith('.png'):
-            # Read the image
-            image_path = os.path.join(input_directory, filename)
-            image = cv2.imread(image_path)
-            if image is None:
-                continue
+    for image in images:
+        # Detect faces in the image
+        dets = detector(image, 1)
 
-            # Detect faces in the image
-            dets = detector(image, 1)
+        # Iterate over detected faces
+        for i, d in enumerate(dets):
+            # Predict facial landmarks
+            shape = predictor(image, d)
 
-            # Iterate over detected faces
-            for i, d in enumerate(dets):
-                # Predict facial landmarks
-                shape = predictor(image, d)
+            # Extract features
+            # Distance between the eyes
+            eye_distance = shape.part(45).x - shape.part(36).x
+            nose_shape = calculate_nose_shape(shape)  # Shape of the nose
+            lips_contour = calculate_lips_contour(shape)  # Contour of the lips
+            # Patterns of wrinkles around the mouth
+            mouth_wrinkles = calculate_mouth_wrinkles(shape)
 
-                # Extract features
-                # Distance between the eyes
-                eye_distance = shape.part(45).x - shape.part(36).x
-                nose_shape = calculate_nose_shape(shape)  # Shape of the nose
-                lips_contour = calculate_lips_contour(
-                    shape)  # Contour of the lips
-                # Patterns of wrinkles around the mouth
-                mouth_wrinkles = calculate_mouth_wrinkles(shape)
+            # Append features to the feature vector
+            feature_vector = [eye_distance] + \
+                nose_shape + lips_contour + mouth_wrinkles
 
-                # Append features to the feature vector
-                feature_vector = [eye_distance] + \
-                    nose_shape + lips_contour + mouth_wrinkles
+            # Add feature vector and filename as label
+            features.append(feature_vector)
 
-                # Add feature vector and filename as label
-                features.append(feature_vector)
+            # Draw lines between facial landmarks on the image
+            draw_lines(image, shape)
 
-                # TODO:
-                label = re.sub(
-                    r'(.+?)_\d+_Cropped.jpg',
-                    lambda match: match.group(1),
-                    filename,
-                )
-                # match = re.search(r"(.*?)_2017_001", filename)
-                labels.append(label)
+        # Save image with landmarks and detected faces
+        # output_path = os.path.join(output_dir, filename)
+        # cv2.imwrite(output_path, image)
 
-                # Draw lines between facial landmarks on the image
-                draw_lines(image, shape)
-
-            # Save image with landmarks and detected faces
-            output_path = os.path.join(output_dir, filename)
-            cv2.imwrite(output_path, image)
-
-    # Return extracted features and corresponding labels
-    return features, labels
+    return features
 
 
 def calculate_eye_distance(shape) -> float:
