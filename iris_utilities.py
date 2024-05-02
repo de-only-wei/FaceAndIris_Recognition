@@ -14,77 +14,127 @@ import pickle
 import shutil
 from scipy.interpolate import interp1d
 from sklearn.model_selection import train_test_split
+import typing
+base_directory = 'Dataset/VISA_Iris/VISA_Iris'
 
-# HOUGH PROCESS FUNCTION
+
+def parse_iris_dataset(keep_reflections: bool = False) -> tuple[list, list, list[str]]:
+    left_images: list = []
+    left_labels: list[str] = []
+    right_images: list = []
+    right_labels: list[str] = []
+
+    for path in glob.iglob(base_directory + '/*'):
+        folder_name = os.path.basename(path)
+
+        label = folder_name
+
+        # Process Left Eye
+        for image_path in glob.iglob(path + '/L/*'):
+            image = cv2.imread(image_path)
+
+            image_hough_processed = process_hough(image_path, image, 50)
+
+            if not keep_reflections:
+                image_hough_processed = remove_reflection(
+                    image_hough_processed)
+
+            if image_hough_processed is not None:
+                (testimage, x, success) = image_hough_processed
+                if success:
+                    left_images.append(testimage)
+                    left_labels.append(label)
+            else:
+                print(f"Error processing image: {image_path}")
+
+        # Process Right Eye
+        for image_path in glob.iglob(path + '/R/*'):
+            image = cv2.imread(image_path)
+
+            image_hough_processed = process_hough(image_path, image, 50)
+
+            if not keep_reflections:
+                image_hough_processed = remove_reflection(
+                    image_hough_processed)
+
+            if image_hough_processed is not None:
+                (testimage, x, success) = image_hough_processed
+                if success:
+                    right_images.append(testimage)
+                    right_labels.append(label)
+            else:
+                print(f"Error processing image: {image_path}")
+
+    return left_images, left_labels, right_images, right_labels
 
 
 def process_hough(imagepath, image, radius) -> tuple[np.ndarray, int, bool]:
-    try:
-        print("Processing image:", imagepath)
 
-        # Resize the image to a fixed size
-        print("Original image size:", image.shape)
-        image = cv2.resize(image, (640, 480), interpolation=cv2.INTER_LINEAR)
-        print("Resized image size:", image.shape)
+    print("Processing image:", imagepath)
 
-        # Convert to grayscale
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Resize the image to a fixed size
+    print("Original image size:", image.shape)
+    image = cv2.resize(image, (640, 480), interpolation=cv2.INTER_LINEAR)
+    print("Resized image size:", image.shape)
 
-        # Apply median blur to reduce noise
-        gray = cv2.medianBlur(gray, 11)
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # Detect edges using Canny edge detector
-        edge = cv2.Canny(gray, 100, 200)
+    # Apply median blur to reduce noise
+    gray = cv2.medianBlur(gray, 11)
 
-        # Apply Otsu's thresholding to get a binary image
-        ret, _ = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    # Detect edges using Canny edge detector
+    edge = cv2.Canny(gray, 100, 200)
 
-        # Find circles in the binary image using Hough Circle Transform
-        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 50,
-                                   param1=ret, param2=30, minRadius=20, maxRadius=100)
+    # Apply Otsu's thresholding to get a binary image
+    ret, _ = cv2.threshold(
+        gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-        # If circles are found
-        if circles is not None:
-            circles = np.uint16(np.around(circles))
-            success = True
+    # Find circles in the binary image using Hough Circle Transform
+    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 50,
+                               param1=ret, param2=30, minRadius=20, maxRadius=100)
 
-            # for circle in circles[0, :]:
-            #     # Extract region of interest around each detected circle
-            #     x, y, r = circle
-            #     x = int(x)
-            #     y = int(y)
-            #     r = int(r)
-            #     roi = image[y - r - radius: y + r +
-            #                 radius, x - r - radius: x + r + radius]
-            #     radius = r
-            for i in circles[:]:
-                roi = image[
-                    i[1] - i[2] - radius: i[1] + i[2] + radius,
-                    i[0] - i[2] - radius: i[0] + i[2] + radius
-                    # i[1] - i[2] : i[1] + i[2], i[0] - i[2] : i[0] + i[2]
-                ]
-                radius = i[2]
+    # If circles are found
+    if circles is not None:
+        circles = np.uint16(np.around(circles))
+        success = True
 
-            return roi, radius, success
+        # for circle in circles[0, :]:
+        #     # Extract region of interest around each detected circle
+        #     x, y, r = circle
+        #     x = int(x)
+        #     y = int(y)
+        #     r = int(r)
+        #     roi = image[y - r - radius: y + r +
+        #                 radius, x - r - radius: x + r + radius]
+        #     radius = r
+        for i in circles[:]:
+            roi = image[
+                i[1] - i[2] - radius: i[1] + i[2] + radius,
+                i[0] - i[2] - radius: i[0] + i[2] + radius
+                # i[1] - i[2] : i[1] + i[2], i[0] - i[2] : i[0] + i[2]
+            ]
+            radius = i[2]
 
-        else:
-            # If no circles are found, set the whole image to white
-            image[:] = 255
-            print(f"{imagepath} -> No circles (iris) found.")
-            success = False
-            cv2.imshow("Image", image)
-            # Wait for a key press (blocks execution)
-            # cv2.waitKey(0)
+        return roi, radius, success
 
-            # Modify the return statement to ensure a tuple with three elements is always returned
-            return image, None, success
+    else:
+        # If no circles are found, set the whole image to white
+        image[:] = 255
+        print(f"{imagepath} -> No circles (iris) found.")
+        success = False
+        cv2.imshow("Image", image)
+        # Wait for a key press (blocks execution)
+        # cv2.waitKey(0)
 
-    except Exception as e:
-        print("Error:", e)
-        return None, None, False
+        # Modify the return statement to ensure a tuple with three elements is always returned
+        return image, None, success
+
 
 # REMOVE REFLECTION FUNCTION
-def remove_reflection(image) -> np.ndarray|None:
+
+
+def remove_reflection(image) -> np.ndarray | None:
     try:
         # Threshold the image to create a mask of the reflection
         ret, mask = cv2.threshold(image, 150, 255, cv2.THRESH_BINARY)
@@ -103,7 +153,9 @@ def remove_reflection(image) -> np.ndarray|None:
         return None
 
 # RUBBER SHEET MODEL GENERATOR FUNCTION
-def generate_rubber_sheet_model(image) -> np.ndarray| None:
+
+
+def generate_rubber_sheet_model(image) -> np.ndarray | None:
     try:
         q = np.arange(0.00, np.pi * 2, 0.01)
         inn = np.arange(0, int(image.shape[0] / 2), 1)
@@ -126,72 +178,6 @@ def generate_rubber_sheet_model(image) -> np.ndarray| None:
         print("Error:", e)
         return None
 
-# PARSE IRIS DATASET FUNCTION
-def parse_iris_dataset(keep_reflections) -> list | None:
-    try:
-        eye_images = []
-        base_directory = 'Dataset/VISA_Iris/VISA_Iris'
-
-        for path in glob.iglob(base_directory + '/*'):
-            foldername = os.path.basename(path)
-            label = foldername
-            print('label:', label)
-            image_id = 1
-
-            # Process Left Eye
-            for image_path in glob.iglob(path + '/L/*'):
-                eye = '-left'
-                image = cv2.imread(image_path)
-
-                image_hough_processed = process_hough(
-                    image_path, image, 50)  # hough transform
-
-                if keep_reflections:
-                    image_hough_processed = remove_reflection(
-                        image_hough_processed)
-
-                if image_hough_processed is not None:
-                    (testimage, x, success) = image_hough_processed
-                    if success:
-                        # Append the left eye image and its metadata
-                        eye_images.append([testimage, image_id, label])
-                        image_id += 1
-                else:
-                    print(f"Error processing image: {image_path}")
-
-            print('L eye:', str(image_id - 1))
-
-            image_id = 1
-            # Process Right Eye
-            for image_path in glob.iglob(path + '/R/*'):
-                eye = '-right'
-                image = cv2.imread(image_path)
-
-                image_hough_processed = process_hough(
-                    image_path, image, 50)  # hough transform
-
-                if keep_reflections:
-                    image_hough_processed = remove_reflection(
-                        image_hough_processed)
-
-                if image_hough_processed is not None:
-                    (testimage, x, success) = image_hough_processed
-                    if success:
-                        # Append the right eye image and its metadata
-                        eye_images.append([testimage, image_id, label + eye])
-                        image_id += 1
-                else:
-                    print(f"Error processing image: {image_path}")
-
-            print('R iris:', str(image_id - 1))
-
-        print('Iris images:', str(len(eye_images)))
-
-        return eye_images
-
-    except Exception as e:
-        print("Error:", e)
-        return None
 
 # PROCESS IMAGES FUNCTION
 def process_images(eye_images):
@@ -256,6 +242,8 @@ def feature_extraction(img):
 
 # DETECT IRIS FUNCTION
 # OBSOLETE - Detect Iris using Iris Cascade
+
+
 def detect_iris(eye_images, display):
     eye_num_2 = 0
     eyes_num = 0
@@ -323,6 +311,8 @@ def detect_iris(eye_images, display):
     print("total images: ", len(eye_images))
 
 # Parse iris dataset and load data
+
+
 def load_data():
     eye_images = []
     labels = []
@@ -357,6 +347,7 @@ def load_data():
 
     print('Total iris images:', len(eye_images))
     return eye_images, labels
+
 
 def split_data(
     features,
