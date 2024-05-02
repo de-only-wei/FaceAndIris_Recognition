@@ -55,26 +55,29 @@ def parse_face_dataset() -> tuple[list[cv2.typing.MatLike], list[str]]:
     return images, labels
 
 
-def detect_faces(images: list[cv2.typing.MatLike], display: bool = False) -> list[cv2.typing.MatLike]:
+def detect_faces(datas: list[tuple[cv2.typing.MatLike, str]], display: bool = False) -> tuple[list[cv2.typing.MatLike], list[str]]:
 
     # Load the pre-trained face cascade classifier
     face_cascade = cv2.CascadeClassifier(
         'Dependencies/haarcascade_frontalface_alt2.xml',
     )
 
-    pre_processed_images: list[cv2.typing.MatLike] = []
-    for image in images:
+    cropped_images: list[cv2.typing.MatLike] = []
+    cropped_labels: list[str] = []
 
+    for data in datas:
+        image, label = data
         for x, y, width, height in face_cascade.detectMultiScale(image, 1.1, 4):
             face = image[y:y + height, x:x + width]
-            pre_processed_images.append(face)
+            cropped_images.append(face)
+            cropped_labels.append(label)
 
-    return pre_processed_images
+    return cropped_images, cropped_labels
 
 # PHASE 3 - FACIAL FEATURE EXTRACTION FUNCTION
 
 
-def extract_features(images: list[cv2.typing.MatLike]) -> list[list]:
+def extract_features(datas: list[tuple[cv2.typing.MatLike, str]]) -> tuple[list[list], list[str]]:
     # Initialize face detector and shape predictor
     detector = dlib.get_frontal_face_detector()
     # detector = cv2.get_frontal_face_detector()
@@ -91,10 +94,12 @@ def extract_features(images: list[cv2.typing.MatLike]) -> list[list]:
     # os.makedirs(output_dir, exist_ok=True)
 
     # Initialize lists to store features and labels
-    features = []
+    features: list[list] = []
+    feature_labels: list[str] = []
 
     # Iterate over images in the input directory
-    for image in images:
+    for data in datas:
+        image, label = data
         # Detect faces in the image
         dets = detector(image, 1)
 
@@ -117,15 +122,16 @@ def extract_features(images: list[cv2.typing.MatLike]) -> list[list]:
 
             # Add feature vector and filename as label
             features.append(feature_vector)
+            feature_labels.append(label)
 
             # Draw lines between facial landmarks on the image
-            draw_lines(image, shape)
+            # draw_lines(image, shape)
 
         # Save image with landmarks and detected faces
         # output_path = os.path.join(output_dir, filename)
         # cv2.imwrite(output_path, image)
 
-    return features
+    return features, feature_labels
 
 
 def calculate_eye_distance(shape) -> float:

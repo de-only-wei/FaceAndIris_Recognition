@@ -42,14 +42,14 @@ def predict(x_test, y_test, knn_clf=None, model: neighbors.KNeighborsClassifier 
     predictions = model.predict(x_test)
 
     # Display each data's label and actual class
-    for i in range(len(y_test)):
-        print("Data", i+1, "Predicted Label:",
-              predictions[i], "Actual Label:", y_test[i])
+    # for i in range(len(y_test)):
+    #     print("Data", i+1, "Predicted Label:",
+    #           predictions[i], "Actual Label:", y_test[i])
 
     # Calculate accuracy
     correct_predictions = np.sum(predictions == y_test)
     total_predictions = len(y_test)
     accuracy = correct_predictions / total_predictions
-    print("Accuracy:", accuracy)
+    # print("Accuracy:", accuracy)
 
-    return predictions
+    return predictions, accuracy
