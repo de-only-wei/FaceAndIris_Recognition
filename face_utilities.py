@@ -10,7 +10,6 @@ import shutil
 import sklearn.model_selection as model_selection
 import typing
 
-# Define the base directory where the face dataset is located
 base_directory = 'Dataset/VISA_Face/VISA_Face'
 
 
@@ -21,14 +20,14 @@ def parse_face_dataset() -> tuple[list[cv2.typing.MatLike], list[str]]:
     # Iterate over each directory in the base directory
     for path in glob.iglob(base_directory + '/*'):
         # Extract the filename from the path
-        filename = os.path.basename(path)
+        folder_name = os.path.basename(path)
 
         # Parse the filename to extract the label
-        match = re.search(r'(.*?)_2017_001', filename)
+        match = re.search(r'(.*?)_2017_001', folder_name)
         if match:
             label = match.group(1)
         else:
-            warnings.warn(f"No match found for filename: {filename}")
+            warnings.warn(f"No match found for filename: {folder_name}")
             continue
 
         for image_path in glob.iglob(path + '/*'):
