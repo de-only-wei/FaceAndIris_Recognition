@@ -44,18 +44,18 @@ def get_face(subject_entity: str):
         if image is None:
             continue
 
-        return cv2.resize(image, (400, 300))
+        image = cv2.resize(image, (400, 300))
+
+        face_cascade = cv2.CascadeClassifier(
+            'Dependencies/haarcascade_frontalface_alt2.xml',
+        )
+
+        x, y, width, height = random.choice(
+            face_cascade.detectMultiScale(image, 1.1, 4))
+        return image[y:y + height, x:x + width]
 
 
-def extract_face_feature(_face):
-    face_cascade = cv2.CascadeClassifier(
-        'Dependencies/haarcascade_frontalface_alt2.xml',
-    )
-
-    x, y, width, height = random.choice(
-        face_cascade.detectMultiScale(_face, 1.1, 4))
-    face = _face[y:y + height, x:x + width]
-
+def extract_face_feature(face):
     detector = dlib.get_frontal_face_detector()
     predictor_path = 'Dependencies/shape_predictor_68_face_landmarks.dat'
     predictor = dlib.shape_predictor(predictor_path)
