@@ -39,6 +39,7 @@ def train(
 
 
 def predict(x_test, y_test, knn_clf=None, model: neighbors.KNeighborsClassifier = None, distance_threshold=0.6):
+    # print(x_test)
     predictions = model.predict(x_test)
 
     # Display each data's label and actual class
@@ -54,3 +55,49 @@ def predict(x_test, y_test, knn_clf=None, model: neighbors.KNeighborsClassifier 
 
     return predictions, accuracy
 
+
+def fuse(face_test, iris_L_test, iris_R_test):
+
+    face_labels = [label for feature, label in face_test]
+    iris_L_labels = [label for feature, label in iris_L_test]
+    iris_R_labels = [label for feature, label in iris_R_test]
+
+    common_labels = [
+        e for e in face_labels if (e in iris_L_labels) and (e in iris_R_labels)]
+    common_labels = list(set(common_labels))
+
+    # print(common_labels)
+
+    new_face_test = []
+
+    for face_tes in face_test:
+        if filllllter(face_tes, common_labels()):
+            new_face_test.append(face_tes)
+    # list(filter(
+    #     lambda f: filllllter(f, common_labels), face_test))
+
+    print(new_face_test)
+
+    new_iris_L_test = list(filter(
+        lambda iL: filllllter(iL, common_labels), iris_L_test))
+
+    new_iris_R_test = list(filter(
+        lambda iR: filllllter(iR, common_labels), iris_R_test))
+
+    # face_f = [feature for feature, label in new_face_test]
+    # iris_L_f = [feature for feature, label in new_iris_L_test]
+    # iris_R_f = [feature for feature, label in new_iris_R_test]
+
+    # print(len(face_f), '|', len(
+    #     iris_L_f), '|', len(iris_R_f))
+
+    return new_face_test, new_iris_L_test, new_iris_R_test
+
+
+def filllllter(tuuuple, labels):
+    feat, lbl = tuuuple
+    print(feat)
+    if lbl in labels:
+        return True
+    else:
+        return False
