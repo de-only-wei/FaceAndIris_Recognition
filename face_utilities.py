@@ -7,8 +7,7 @@ import re
 import glob
 import warnings
 import shutil
-from sklearn.model_selection import train_test_split
-import pickle
+import sklearn.model_selection as model_selection
 import typing
 
 # Define the base directory where the face dataset is located
@@ -265,7 +264,7 @@ def split_data(
     os.makedirs(test_directory, exist_ok=True)
 
     # Split the data into training and testing sets
-    x_train, x_test, y_train, y_test = train_test_split(
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(
         features, labels,
         test_size=test_size,
         random_state=42,
