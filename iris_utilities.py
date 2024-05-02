@@ -40,7 +40,7 @@ def parse_iris_dataset(keep_reflections: bool = False) -> tuple[list, list, list
                     image_hough_processed)
 
             if image_hough_processed is not None:
-                (testimage, x, success) = image_hough_processed
+                (testimage, success) = image_hough_processed
                 if success:
                     left_images.append(testimage)
                     left_labels.append(label)
@@ -58,7 +58,7 @@ def parse_iris_dataset(keep_reflections: bool = False) -> tuple[list, list, list
                     image_hough_processed)
 
             if image_hough_processed is not None:
-                (testimage, x, success) = image_hough_processed
+                (testimage, success) = image_hough_processed
                 if success:
                     right_images.append(testimage)
                     right_labels.append(label)
@@ -96,6 +96,7 @@ def process_hough(imagepath, image, radius) -> tuple[np.ndarray, int, bool]:
 
     # If circles are found
     if circles is not None:
+        circles = circles[0, :, :]
         circles = np.uint16(np.around(circles))
         success = True
 
@@ -116,19 +117,19 @@ def process_hough(imagepath, image, radius) -> tuple[np.ndarray, int, bool]:
             ]
             radius = i[2]
 
-        return roi, radius, success
+        return roi, success
 
     else:
         # If no circles are found, set the whole image to white
         image[:] = 255
         print(f"{imagepath} -> No circles (iris) found.")
         success = False
-        cv2.imshow("Image", image)
+        # cv2.imshow("Image", image)
         # Wait for a key press (blocks execution)
         # cv2.waitKey(0)
 
         # Modify the return statement to ensure a tuple with three elements is always returned
-        return image, None, success
+        return image, success
 
 
 # REMOVE REFLECTION FUNCTION
@@ -155,62 +156,45 @@ def remove_reflection(image) -> np.ndarray | None:
 # RUBBER SHEET MODEL GENERATOR FUNCTION
 
 
-def generate_rubber_sheet_model(image) -> np.ndarray | None:
-    try:
-        q = np.arange(0.00, np.pi * 2, 0.01)
-        inn = np.arange(0, int(image.shape[0] / 2), 1)
+def generate_rubber_sheet_model(image) -> np.ndarray:
 
-        cartisian_image = np.empty(shape=[inn.size, int(image.shape[1]), 3])
-        m = interp1d([np.pi * 2, 0], [0, image.shape[1]])
+    q = np.arange(0.00, np.pi * 2, 0.01)
+    inn = np.arange(0, int(image.shape[0] / 2), 1)
 
-        for r in inn:
-            for t in q:
-                polarX = int((r * np.cos(t)) + image.shape[1] / 2)
-                polarY = int((r * np.sin(t)) + image.shape[0] / 2)
-                try:
-                    cartisian_image[int(r)][int(m(t))] = image[polarY][polarX]
-                except Exception as e:
-                    print("Error:", e)
+    cartisian_image = np.empty(shape=[inn.size, int(image.shape[1]), 3])
+    m = interp1d([np.pi * 2, 0], [0, image.shape[1]])
 
-        return cartisian_image.astype("uint8")
+    for r in inn:
+        for t in q:
+            polarX = int((r * np.cos(t)) + image.shape[1] / 2)
+            polarY = int((r * np.sin(t)) + image.shape[0] / 2)
+            try:
+                cartisian_image[int(r)][int(m(t)-1)] = image[polarY][polarX]
+            except Exception as e:
+                print("Error:", e)
 
-    except Exception as e:
-        print("Error:", e)
-        return None
+    return cartisian_image.astype("uint8")
 
 
-# PROCESS IMAGES FUNCTION
-def process_images(eye_images):
-    try:
-        # Create a directory for saving the processed images if it doesn't exist
-        output_dir = "Iris_Output_Demo"
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+def process_images(datas: list[tuple[typing.Any, str]]) -> tuple[list, list[str]]:
 
-        for eye_image in eye_images:
-            (hough_information, image_id, label) = eye_image
-            (image, radius, success) = hough_information
-            print(str(image_id) + ':', str(success))
-            if success and image.size > 0:
-                image_daugman = generate_rubber_sheet_model(image)
-                if image_daugman is not None:
-                    # Create a directory for the label if it doesn't exist
-                    label_dir = os.path.join(output_dir, label)
-                    if not os.path.exists(label_dir):
-                        os.makedirs(label_dir)
+    processed_images: list = []
+    processed_labels: list[str] = []
 
-                    # Save the processed image into the respective label directory
-                    cv2.imwrite(
-                        os.path.join(label_dir, f'{image_id}.Iris.bmp'),
-                        image_daugman
-                    )
-                else:
-                    print(
-                        f"Failed to generate Daugman for image: {label}.{image_id}")
-            else:
-                print(f"Failed to process image: {label}.{image_id}")
-    except Exception as e:
-        print("Error:", e)
+    for data in datas:
+
+        image, label = data
+
+        image_daugman = generate_rubber_sheet_model(image)
+
+        if image_daugman is not None:
+            processed_images.append(image_daugman)
+            processed_labels.append(label)
+
+        else:
+            print(f"Failed to generate Daugman for image: {label}")
+
+    return processed_images, processed_labels
 
 
 def feature_extraction(img):
