@@ -197,9 +197,30 @@ def process_images(datas: list[tuple[typing.Any, str]]) -> tuple[list, list[str]
     return processed_images, processed_labels
 
 
-def feature_extraction(img):
+def extract_features(datas: list[tuple[typing.Any, str]]) -> tuple[list[list], list[str]]:
+    features: list[list] = []
+    feature_labels: list[str] = []
+
+    for data in datas:
+        image, label = data
+        feature = feature_extraction(image)
+
+        if feature is None:
+            continue
+
+        features.append(feature)
+        feature_labels.append(label)
+
+    return features, feature_labels
+
+
+def feature_extraction(img) -> list | None:
     features = []
-    ccoeffs = pywt.dwt2(img[:, :, 0], 'haar')
+    try:
+        ccoeffs = pywt.dwt2(img[:, :, 0], 'haar')
+    except Exception as e:
+        return None
+
     LL, (LH, HL, HH) = ccoeffs
     for coef in [LL, LH, HL, HH]:
         features.append(np.mean(coef))
