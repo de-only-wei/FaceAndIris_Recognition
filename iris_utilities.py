@@ -205,7 +205,7 @@ def extract_features(datas: list[tuple[typing.Any, str]]) -> tuple[list[list], l
         image, label = data
         feature = feature_extraction(image)
 
-        if feature is None:
+        if feature is []:
             continue
 
         features.append(feature)
@@ -214,12 +214,12 @@ def extract_features(datas: list[tuple[typing.Any, str]]) -> tuple[list[list], l
     return features, feature_labels
 
 
-def feature_extraction(img) -> list | None:
+def feature_extraction(img) -> list:
     features = []
     try:
         ccoeffs = pywt.dwt2(img[:, :, 0], 'haar')
     except Exception as e:
-        return None
+        return []
 
     LL, (LH, HL, HH) = ccoeffs
     for coef in [LL, LH, HL, HH]:
