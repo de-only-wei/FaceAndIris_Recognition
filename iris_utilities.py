@@ -37,8 +37,7 @@ def process_hough(imagepath, image, radius) -> tuple[np.ndarray, int, bool]:
         edge = cv2.Canny(gray, 100, 200)
 
         # Apply Otsu's thresholding to get a binary image
-        ret, binary_image = cv2.threshold(
-            gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        ret, _ = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
         # Find circles in the binary image using Hough Circle Transform
         circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 50,
@@ -49,15 +48,22 @@ def process_hough(imagepath, image, radius) -> tuple[np.ndarray, int, bool]:
             circles = np.uint16(np.around(circles))
             success = True
 
-            for circle in circles[0, :]:
-                # Extract region of interest around each detected circle
-                x, y, r = circle
-                x = int(x)
-                y = int(y)
-                r = int(r)
-                roi = image[y - r - radius: y + r +
-                            radius, x - r - radius: x + r + radius]
-                radius = r
+            # for circle in circles[0, :]:
+            #     # Extract region of interest around each detected circle
+            #     x, y, r = circle
+            #     x = int(x)
+            #     y = int(y)
+            #     r = int(r)
+            #     roi = image[y - r - radius: y + r +
+            #                 radius, x - r - radius: x + r + radius]
+            #     radius = r
+            for i in circles[:]:
+                roi = image[
+                    i[1] - i[2] - radius: i[1] + i[2] + radius,
+                    i[0] - i[2] - radius: i[0] + i[2] + radius
+                    # i[1] - i[2] : i[1] + i[2], i[0] - i[2] : i[0] + i[2]
+                ]
+                radius = i[2]
 
             return roi, radius, success
 
@@ -219,6 +225,7 @@ def process_images(eye_images):
                 print(f"Failed to process image: {label}.{image_id}")
     except Exception as e:
         print("Error:", e)
+
 
 def feature_extraction(img):
     features = []
